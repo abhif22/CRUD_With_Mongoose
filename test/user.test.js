@@ -54,4 +54,24 @@ describe('Testing User Model for Deletion', ()=>{
                 done();
             });
     });
+    it('Using Class based Removal using findOneAndRemove()', (done)=>{
+        User.findOneAndRemove({name: 'Abhishek Srivastava'})
+            .then(()=>{
+                User.findOne({name: 'Abhishek Srivastava'})
+            })
+            .then((result)=>{
+                assert(result==null);
+                done();
+            });
+    });
+    it('Using Class based Removal using findByIdAndRemove()', (done)=>{
+        User.findByIdAndRemove({_id: newUser.id})
+            .then(()=>{
+                User.findOne({_id: newUser.id})
+            })
+            .then((result)=>{
+                assert(result==null);
+                done();
+            });
+    });
 });
