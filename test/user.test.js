@@ -14,6 +14,9 @@ describe('Testing User Model For Creating and Searching ', ()=>{
                 .then(()=>{
                     assert(!newUser.isNew);
                     done();
+                })
+                .catch((err)=>{
+                    cosnole.log(err);
                 });
     });
     it('Finds all Existing Users', (done)=>{
@@ -152,8 +155,104 @@ describe('Testing User Model Updation', ()=>{
 describe('Schema Validations', ()=>{
     it('Testing if Required Field Values are Missing', (done)=>{
         newUser = new User({name: undefined});
-        validationRes = newUser.validateSync();
+        let validationRes = newUser.validateSync();
         assert(validationRes.errors.name.message === 'Name is Required');
         done();
+    });
+    it('Testing if Name is greater than 2 characters', (done)=>{
+        newUser = new User({name: 'Abhishek'});
+        let validationRes = newUser.validateSync();
+        console.log(validationRes);
+        assert(validationRes.errors.name.message != 'Name must be greater than 2 characters');
+        done();
+    });
+});
+
+describe('Subdocuments Test', ()=>{
+    it('Creating User with some subDocuments', (done)=>{
+        newUser = new User({
+            name: 'Rockstar',
+            posts:[
+                {title: 'Kun Faya Kun Faya...'},
+                {title: 'Tum ho saath mere...'},
+                {title: 'Jo bhi mai kehna ...'}
+            ]
+        });
+        newUser.save()
+            .then(()=>User.findOne({name: 'Rockstar'}))
+            .then((result)=>{
+                assert(result!=null);
+                done();
+            })
+            .catch((err)=>console.log(err));
+    });
+    it('Adding Subdocuments to existing User', (done)=>{
+        User.findOne({name: 'Manoj Srivastava'})
+            .then((result)=>{
+                assert(result!=null);
+                let len = result.posts.length;  
+                result.posts.push({title: 'O mere dil ke chain...'});
+                result.save()
+                    .then(()=> User.findOne({name: 'Manoj Srivastava'}))
+                    .then((user)=>{
+                        assert(user.posts.length==len+1);
+                        done();
+                    });
+            });
+    });
+    it('Removing Subdocuments from an Existing User', (done)=>{
+        User.findOne({name: 'Rockstar'})
+            .then((result)=>{
+                len = result.posts.length;
+                //We Won't have to this for loop part
+                //We will generally get _id from front end
+                let post_id = '5b6f2896c0034962c1a31918'
+                for(let i=0;i<result.posts.length;i++){
+                    if(result.posts[i].title=='Jo bhi mai kehna ...')
+                        post_id=result.posts[i]._id;
+                }
+                console.log(`Deleting Post_id: ${post_id}`);
+                result.posts.id(post_id).remove();
+                // result.update({$pull: {posts: {_id: post_id}}});
+                return result.save();
+            })
+            .then(()=>User.findOne({name: 'Rockstar'}))
+            .then((user)=>{
+                assert(user.posts.length==len-1);
+                done();
+            })
+            .catch((err)=>console.log(err));
+    });
+    it('Updating Content Inside Subdocuments of an Existing User', (done)=>{
+        var post_id = '5b6f2896c0034962c1a31918'
+        User.findOne({name: 'Rockstar'})
+            .then((result)=>{
+                len = result.posts.length;
+                //We Won't have to this for loop part
+                //We will generally get _id from front end
+                for(let i=0;i<result.posts.length;i++){
+                    if(result.posts[i].title=='Kun Faya Kun Faya...')
+                        post_id=result.posts[i]._id;
+                }
+                console.log(`Updating Post_id: ${post_id}`);
+                result.posts.id(post_id).title='Kaho na pyaar hai ...';
+                return result.save();
+            })
+            .then(()=>User.findOne({name: 'Rockstar'}))
+            .then((user)=>{
+                assert(user.posts.id(post_id).title=='Kaho na pyaar hai ...');
+                done();
+            })
+            .catch((err)=>console.log(err));
+    });
+
+    it('Remove All Subdocuments from an Existing User', (done)=>{
+        User.findOneAndUpdate({name: 'Rockstar'},{posts: []},{upsert: true})
+            .then(()=>User.findOne({name: 'Rockstar'}))
+            .then((user)=>{
+                assert(user.posts.length==0);
+                done();
+            })
+            .catch((err)=>console.log(err));
     });
 });
