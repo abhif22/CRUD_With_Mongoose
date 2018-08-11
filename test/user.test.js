@@ -26,6 +26,13 @@ describe('Testing User Model For Creating and Searching ', ()=>{
 });
 
 describe('Testing User Model for Deletion', ()=>{
+
+    before((done)=>{
+        mongoose.connection.collections.users.drop(()=>{
+            done();
+        });
+    });
+
     beforeEach((done)=>{
         newUser = new User({name: 'Abhishek Srivastava'});
         newUser.save()
@@ -34,7 +41,7 @@ describe('Testing User Model for Deletion', ()=>{
     it('Using Instance Based Method to Remove', (done)=>{
         newUser.remove()
             .then(()=> {
-                User.findOne({name: 'Abhishek Srivastava'})
+                return User.findOne({name: 'Abhishek Srivastava'})
             })
             .then((result)=>{
                 assert(result==null);
@@ -47,7 +54,7 @@ describe('Testing User Model for Deletion', ()=>{
     it('Using Class based remove', (done)=>{
         User.remove({name: 'Abhishek Srivastava'})
             .then(()=>{
-                User.findOne({name: 'Abhishek Srivastava'})
+                return User.findOne({name: 'Abhishek Srivastava'})
             })
             .then((result)=>{
                 assert(result==null);
@@ -57,7 +64,7 @@ describe('Testing User Model for Deletion', ()=>{
     it('Using Class based Removal using findOneAndRemove()', (done)=>{
         User.findOneAndRemove({name: 'Abhishek Srivastava'})
             .then(()=>{
-                User.findOne({name: 'Abhishek Srivastava'})
+                return User.findOne({name: 'Abhishek Srivastava'})
             })
             .then((result)=>{
                 assert(result==null);
@@ -67,7 +74,7 @@ describe('Testing User Model for Deletion', ()=>{
     it('Using Class based Removal using findByIdAndRemove()', (done)=>{
         User.findByIdAndRemove({_id: newUser.id})
             .then(()=>{
-                User.findOne({_id: newUser.id})
+                return User.findOne({_id: newUser.id})
             })
             .then((result)=>{
                 assert(result==null);
@@ -139,5 +146,14 @@ describe('Testing User Model Updation', ()=>{
                 assert(result.name.toString()==='Srivastava');
                 done();
             });
+    });
+});
+
+describe('Schema Validations', ()=>{
+    it('Testing if Required Field Values are Missing', (done)=>{
+        newUser = new User({name: undefined});
+        validationRes = newUser.validateSync();
+        assert(validationRes.errors.name.message === 'Name is Required');
+        done();
     });
 });
